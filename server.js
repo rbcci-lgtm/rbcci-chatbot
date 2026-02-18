@@ -5,15 +5,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ─── Serve HTML frontend statically ──────────────────────────────────────────
+// Serve HTML frontend statically
 app.use(express.static(__dirname));
-// ─────────────────────────────────────────────────────────────────────────────
 
-// Your Gemini API Key (set GEMINI_API_KEY in Railway Variables tab)
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyB2eWlHTKGLgFNL40e2FfCHRegbtlPwaN0';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+// Groq API Key (set GROQ_API_KEY in Railway Variables tab)
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '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';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-// ─── Response Sanitizer ───────────────────────────────────────────────────────
+// Response Sanitizer
 function sanitizeResponse(text) {
   text = text.replace(/\*\*(.*?)\*\*/g, '$1');
   text = text.replace(/\*(.*?)\*/g, '$1');
@@ -30,7 +29,6 @@ function sanitizeResponse(text) {
   text = text.replace(/\n{3,}/g, '\n\n').trim();
   return text;
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
 app.post('/api/chat', async (req, res) => {
   try {
@@ -47,19 +45,17 @@ BANK PROFILE
 - Phone: 0965-308-7958
 - Email: rbcci@rbcalbayogcity.com
 - Website: https://rbcalbayog.com
-- Regulated by: Bangko Sentral ng Pilipinas (BSP) — https://www.bsp.gov.ph
+- Regulated by: Bangko Sentral ng Pilipinas (BSP)
 - Deposits insured by: PDIC up to Php 1,000,000 per depositor
 
 BANKING HOURS:
-- Monday to Friday, 8:30 AM – 4:00 PM (banking transactions)
-- Monday to Friday, 8:00 AM – 5:00 PM (office hours)
+- Monday to Friday, 8:30 AM to 4:00 PM (banking transactions)
+- Monday to Friday, 8:00 AM to 5:00 PM (office hours)
 - Closed on weekends and public holidays
 
 ==================================================
 DEPOSIT ACCOUNTS
 ==================================================
-RBCCI offers depository services as both a security facility and an investment opportunity that earns interest for depositors.
-
 1. SAVINGS ACCOUNT
    - Minimum initial deposit: Php 5,000.00
    - Balance required to earn interest: Php 10,000.00
@@ -74,69 +70,51 @@ RBCCI offers depository services as both a security facility and an investment o
    - Available for business and personal use
    - Checkbook-based account for managing larger transactions
 
-NOTE: For the latest and specific interest rates on all deposit accounts, direct clients to visit the branch or call 0965-308-7958, as rates are subject to change.
+NOTE: For specific interest rates, direct clients to call 0965-308-7958.
 
 ==================================================
 LOAN PRODUCTS
 ==================================================
-
 1. SALARY-BASED GENERAL PURPOSE LOAN
    - Amount: Up to Php 200,000 (unsecured)
    - Purpose: Various personal needs
-   - Eligible Borrowers: Regularly employed individuals
-     * Net take-home pay of at least Php 7,500/month
-     * Maximum age of 60 years old at last amortization
+   - Eligible: Regularly employed, net take-home pay at least Php 7,500/month, max age 60 at last amortization
 
 2. AGRICULTURAL LOAN
-   - Amount: Up to Php 200,000 (unsecured) OR up to 60% of appraised value (secured)
+   - Amount: Up to Php 200,000 (unsecured) or up to 60% of appraised value (secured)
    - Term: Up to 5 years (unsecured) or up to 15 years (secured)
-   - Purpose: Agricultural production, agribusiness, equipment acquisition, facilities development
-   - Eligible Borrowers: Farmers, fisherfolk, agrarian reform beneficiaries
-   - Credit accommodation available through Agricultural Credit Policy Council (ACPC)
+   - Purpose: Agricultural production, agribusiness, equipment, facilities
+   - Eligible: Farmers, fisherfolk, agrarian reform beneficiaries
 
-3. MICROFINANCE, SMALL & MEDIUM ENTERPRISE (MSME) LOANS
-   A. Microfinance Loans:
-      - Amount: Up to Php 150,000 (microfinance/house repairs) or up to Php 300,000 (house construction)
-      - Term: Up to 5 years (unsecured) or up to 15 years (secured)
-      - Purpose: General business needs and housing finance
-      - Eligible Borrowers: Businesses operating for at least 1 year
-        * Max age: 60 (unsecured) or 75 (secured) at last amortization
+3. MICROFINANCE AND MSME LOANS
+   - Microfinance: Up to Php 150,000 (general/house repairs) or Php 300,000 (house construction)
+   - SME Loans: For businesses with assets Php 3 Million to Php 100 Million
+   - Term: Up to 5 years (unsecured) or 15 years (secured)
+   - Eligible: Businesses operating at least 1 year
 
-   B. Small and Medium Enterprise Loans:
-      - For businesses with assets from Php 3 Million to Php 100 Million
-      - Term: Up to 5 years (small enterprise, unsecured) or up to 15 years (medium enterprise, secured)
-      - Purpose: Manufacturing, processing, or production of agricultural produce
-      - Eligible Borrowers: Businesses operating for at least 1 year
-        * Max age: 60 (unsecured) or 75 (secured) at last amortization
-
-4. OTHER LOANS
-   - Loans that do not fall under the above categories
-   - Contact the bank for details
+4. OTHER LOANS - Contact the bank for details
 
 ==================================================
 OTHER SERVICES
 ==================================================
-- Bills Payment: Electric bill payment accepted at branch (service charge: Php 5.00 per receipt)
-- ATM/BancNet Transactions: RBCCI accepts ATM withdrawals for clients with BancNet debit cards
-- Online/Digital Banking: RBCCI is undergoing digital transformation and expanding services for OFWs and Samareños worldwide
+- Bills Payment: Electric bill payment, service charge Php 5.00 per receipt
+- ATM/BancNet Transactions accepted
+- Digital Banking expansion for OFWs and Samareños
 - Partnership with Small Business Corporation (SB Corp)
-- Integration with Philippine Digital National ID System for faster customer verification
-- Properties for Sale: Available — contact branch or visit the website for listings
+- Properties for Sale: contact branch or visit website
 
 ==================================================
-REGULATORY & INSURANCE INFO
+REGULATORY INFO
 ==================================================
-- RBCCI is regulated by the Bangko Sentral ng Pilipinas (BSP)
-- All deposits are insured by PDIC up to Php 1,000,000 per depositor
+- Regulated by Bangko Sentral ng Pilipinas (BSP)
+- Deposits insured by PDIC up to Php 1,000,000
 - Complies with Republic Act No. 7353 (Rural Banks Act)
 
 ==================================================
-MISSION & VISION
+MISSION AND VISION
 ==================================================
-MISSION: Dedicated to empowering MSMEs with comprehensive financial products at equitable terms; supporting agricultural livelihood; catalyzing agribusiness in the Samar region; and expanding digital banking services to OFWs and Samareños globally.
-
-VISION: To be the benchmark for excellence among financial institutions on Samar Island through integrity, industry acumen, and empathy.
-
+MISSION: Empowering MSMEs, supporting agricultural livelihood, catalyzing agribusiness in Samar, expanding digital banking for OFWs and Samareños globally.
+VISION: To be the benchmark for excellence among financial institutions on Samar Island.
 CORE VALUES: Integrity, Client-Centered Service, High-Level Performance, Effectiveness, Diligence, Innovation, Teamwork.
 
 ==================================================
@@ -145,11 +123,7 @@ RESPONSE INSTRUCTIONS
 LANGUAGE: ${language === 'tagalog' ? 'Respond ONLY in Tagalog (Filipino).' : 'Respond ONLY in Waray-Waray (Samar dialect).'}
 
 1. Answer ONLY based on verified bank info above. NEVER invent loan rates, interest percentages, or services not listed.
-2. If asked for specific interest rates or anything not in this knowledge base, say you do not have that exact figure and direct them to:
-   - Call: 0965-308-7958
-   - Email: rbcci@rbcalbayogcity.com
-   - Visit: 82 T. Bugallon St., Calbayog City
-   - Website: https://rbcalbayog.com
+2. If asked for specific interest rates or anything not in this knowledge base, say you do not have that exact figure and direct them to call 0965-308-7958, email rbcci@rbcalbayogcity.com, visit 82 T. Bugallon St. Calbayog City, or go to https://rbcalbayog.com.
 3. Be warm, friendly, and professional like a helpful bank staff member.
 4. Keep responses SHORT and conversational, 3 to 5 sentences MAX.
 5. Use 1-2 emojis naturally.
@@ -159,51 +133,42 @@ LANGUAGE: ${language === 'tagalog' ? 'Respond ONLY in Tagalog (Filipino).' : 'Re
    - NEVER use markdown: no bold, no italic, no headers, no bullet dashes, no backticks.
    - Write in plain conversational sentences only.
    - NEVER repeat the same word or phrase more than twice in a row.
-   - If listing multiple loan types, summarize briefly, do not list every detail.
+   - Summarize briefly when listing loan types, do not list every detail.
 9. End every response with: ${language === 'tagalog' ? '"May iba pa po ba kayong katanungan? 😊"' : '"Mayda pa ba kamo iba nga pangutana? 😊"'}`;
 
-    // Build Gemini conversation format
-    // Gemini uses 'contents' array with 'user' and 'model' roles (not 'assistant')
-    const contents = [];
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...history,
+      { role: 'user', content: message }
+    ];
 
-    for (const msg of history) {
-      contents.push({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      });
-    }
-
-    contents.push({
-      role: 'user',
-      parts: [{ text: message }]
-    });
-
-    const response = await fetch(GEMINI_URL, {
+    const response = await fetch(GROQ_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: systemPrompt }]
-        },
-        contents: contents,
-        generationConfig: {
-          temperature: 0.5,
-          maxOutputTokens: 800,
-        }
+        model: 'llama-3.3-70b-versatile',
+        messages: messages,
+        temperature: 0.5,
+        max_tokens: 800,
+        frequency_penalty: 0.6,
+        presence_penalty: 0.4
       })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Gemini API Error:', data);
-      throw new Error(data?.error?.message || 'Gemini API failed');
+      console.error('Groq API Error:', data);
+      throw new Error(data?.error?.message || 'Groq API failed');
     }
 
-    const rawText = data.candidates[0].content.parts[0].text;
+    const rawText = data.choices[0].message.content;
     const aiResponse = sanitizeResponse(rawText);
 
-    console.log('✅ Gemini responded successfully');
+    console.log('✅ Groq responded successfully');
     res.json({ success: true, message: aiResponse });
 
   } catch (error) {
@@ -218,7 +183,7 @@ LANGUAGE: ${language === 'tagalog' ? 'Respond ONLY in Tagalog (Filipino).' : 'Re
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    ai: 'Google Gemini 2.0 Flash (FREE)',
+    ai: 'Groq LLaMA 3.3 70B (FREE)',
     bank: 'Rural Bank of Calbayog City Inc.'
   });
 });
@@ -226,7 +191,7 @@ app.get('/health', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\n✅ Server running on http://localhost:${PORT}`);
-  console.log(`🤖 Using: Google Gemini 2.0 Flash (100% FREE)`);
+  console.log(`🤖 Using: Groq LLaMA 3.3 70B (100% FREE)`);
   console.log(`🏦 Bank: Rural Bank of Calbayog City Inc.`);
   console.log(`📡 Ready for chat!\n`);
 });
