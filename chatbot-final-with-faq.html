@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,8 +31,32 @@
 
     body {
       font-family: var(--font);
-      background: #e9f5ee;
-      min-height: 100vh;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* ── EMBEDDED MODE: fills iframe completely ── */
+    body.embedded-mode {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      align-items: stretch;
+    }
+    body.embedded-mode #chat-button { display: none !important; }
+    body.embedded-mode #chat-window {
+      position: relative !important;
+      bottom: auto !important;
+      right: auto !important;
+      width: 100% !important;
+      height: 100vh !important;
+      display: flex !important;
+      border-radius: 12px !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
+      transform: none !important;
+      opacity: 1 !important;
+      flex: 1;
     }
 
     /* ── CHAT BUBBLE BUTTON ─────────────────────────────── */
@@ -1295,6 +1320,20 @@ Bibigyan ka han sertipiko nga nagpapatunay han imo deposito ngan petsa han matur
     messageInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') sendMessage();
     });
+
+    // ── EMBEDDED MODE DETECTION ───────────────────────────
+    // If loaded inside an iframe, activate embedded mode automatically
+    (function() {
+      const isEmbedded = window.self !== window.top;
+      if (isEmbedded) {
+        document.body.classList.add('embedded-mode');
+        // Auto-open the chat window
+        chatWindow.classList.add('active');
+        // Show language selection immediately
+        if (!language) showLanguageSelection();
+      }
+    })();
+    // ─────────────────────────────────────────────────────
   </script>
 </body>
 </html>
