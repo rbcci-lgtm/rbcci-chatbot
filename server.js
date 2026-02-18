@@ -5,6 +5,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ─── Serve HTML frontend statically ──────────────────────────────────────────
+app.use(express.static(__dirname));
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Your OpenRouter API Key
 const API_KEY = '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';
 
