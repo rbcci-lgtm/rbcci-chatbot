@@ -9,111 +9,33 @@ app.use(express.json());
 app.use(express.static(__dirname));
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Your OpenRouter API Key
-const API_KEY = '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';
-
-// ─── Free Model Fallback List ─────────────────────────────────────────────────
-// openrouter/free auto-picks any working free model — best for avoiding downtime.
-// The rest are reliable newer models as manual fallbacks.
-const FREE_MODELS = [
-  'openrouter/free',                              // Auto-picks any available free model
-  'meta-llama/llama-4-scout:free',               // Llama 4 Scout - reliable & fast
-  'meta-llama/llama-4-maverick:free',            // Llama 4 Maverick - larger, smarter
-  'deepseek/deepseek-chat-v3-0324:free',         // DeepSeek V3 - highly capable
-  'mistralai/mistral-small-3.1-24b-instruct:free', // Mistral Small - good multilingual
-  'nvidia/llama-3.1-nemotron-nano-8b-v1:free',  // NVIDIA Nemotron - fast responses
-  'meta-llama/llama-3.2-3b-instruct:free',       // Original (kept as last resort)
-];
-// ─────────────────────────────────────────────────────────────────────────────
-
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// Your Gemini API Key (set GEMINI_API_KEY in Railway Variables tab)
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyB2eWlHTKGLgFNL40e2FfCHRegbtlPwaN0';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // ─── Response Sanitizer ───────────────────────────────────────────────────────
 function sanitizeResponse(text) {
-  // 1. Strip markdown bold/italic/code
   text = text.replace(/\*\*(.*?)\*\*/g, '$1');
   text = text.replace(/\*(.*?)\*/g, '$1');
   text = text.replace(/__(.*?)__/g, '$1');
   text = text.replace(/`(.*?)`/g, '$1');
-
-  // 2. Strip markdown headers
   text = text.replace(/^#{1,6}\s+/gm, '');
-
-  // 3. Fix repetition loops (e.g. "Iba't Iba't Iba't..." repeating 4+ times)
   text = text.replace(/(\b[\w'']{2,30}(?:\s+[\w'']{1,20}){0,5})\s+(?:\1\s+){3,}/gi, '$1 ');
-
-  // 4. Cut off only if response is absurdly long (over 3000 chars is likely a loop)
   if (text.length > 3000) {
     text = text.substring(0, 3000);
     const lastPeriod = Math.max(text.lastIndexOf('.'), text.lastIndexOf('!'), text.lastIndexOf('?'));
     if (lastPeriod > 1000) text = text.substring(0, lastPeriod + 1);
     text += '\n\nPara sa kumpletong impormasyon, makipag-ugnayan sa amin sa 0965-308-7958. 😊';
   }
-
-  // 5. Clean up excess whitespace/newlines
   text = text.replace(/\n{3,}/g, '\n\n').trim();
-
   return text;
-}
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─── Fetch with per-model retry + fallback ────────────────────────────────────
-async function fetchWithFallback(url, baseOptions, messages) {
-  for (let modelIndex = 0; modelIndex < FREE_MODELS.length; modelIndex++) {
-    const model = FREE_MODELS[modelIndex];
-    console.log(`🤖 Trying model: ${model}`);
-
-    const options = {
-      ...baseOptions,
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.5,         // Lower = more focused, less repetition
-        max_tokens: 800,           // Enough for complete answers without loops
-        frequency_penalty: 0.6,   // Penalize repeating the same words/phrases
-        presence_penalty: 0.4,    // Encourage topic variety
-      })
-    };
-
-    let success = false;
-    const maxRetries = 2;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      const response = await fetch(url, options);
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log(`✅ Success with model: ${model}`);
-        return { response, data };
-      }
-
-      const isRateLimited = response.status === 429 || data?.error?.code === 429;
-
-      if (isRateLimited) {
-        if (attempt < maxRetries) {
-          const delay = 5000 * attempt;
-          console.warn(`⚠️  Rate limited on ${model}. Retrying in ${delay / 1000}s... (Attempt ${attempt}/${maxRetries})`);
-          await sleep(delay);
-        } else {
-          console.warn(`⛔ Model ${model} is rate-limited. Switching to next model...`);
-          break; // move to next model
-        }
-      } else {
-        // Non-rate-limit error — log and try next model
-        console.error(`❌ Error on model ${model}:`, data?.error?.message || data);
-        break;
-      }
-    }
-  }
-
-  throw new Error('All available models are currently unavailable. Please try again later.');
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.post('/api/chat', async (req, res) => {
   try {
     const { message, language, history } = req.body;
-    
+
     const systemPrompt = `You are the official AI virtual assistant of Rural Bank of Calbayog City, Inc. (RBCCI). Answer ONLY based on the verified bank information below. Do not invent rates, figures, or services not listed here.
 
 ==================================================
@@ -194,7 +116,7 @@ LOAN PRODUCTS
 ==================================================
 OTHER SERVICES
 ==================================================
-- Bills Payment: Electric bill payment accepted at branch (service charge: Php 5.00 per receipt — just bring your official electric bill receipt)
+- Bills Payment: Electric bill payment accepted at branch (service charge: Php 5.00 per receipt)
 - ATM/BancNet Transactions: RBCCI accepts ATM withdrawals for clients with BancNet debit cards
 - Online/Digital Banking: RBCCI is undergoing digital transformation and expanding services for OFWs and Samareños worldwide
 - Partnership with Small Business Corporation (SB Corp)
@@ -223,70 +145,88 @@ RESPONSE INSTRUCTIONS
 LANGUAGE: ${language === 'tagalog' ? 'Respond ONLY in Tagalog (Filipino).' : 'Respond ONLY in Waray-Waray (Samar dialect).'}
 
 1. Answer ONLY based on verified bank info above. NEVER invent loan rates, interest percentages, or services not listed.
-2. If the client asks for specific interest rates or anything not in this knowledge base, honestly say you don't have that exact figure and direct them to:
+2. If asked for specific interest rates or anything not in this knowledge base, say you do not have that exact figure and direct them to:
    - Call: 0965-308-7958
    - Email: rbcci@rbcalbayogcity.com
    - Visit: 82 T. Bugallon St., Calbayog City
    - Website: https://rbcalbayog.com
-3. Be warm, friendly, and professional — like a helpful bank staff member.
-4. Keep responses SHORT and conversational — 3 to 5 sentences MAX. Never write long lists unless absolutely necessary.
+3. Be warm, friendly, and professional like a helpful bank staff member.
+4. Keep responses SHORT and conversational, 3 to 5 sentences MAX.
 5. Use 1-2 emojis naturally.
-6. NEVER ask for sensitive info (PIN, password, full account numbers, OTP).
+6. NEVER ask for sensitive info like PIN, password, full account numbers, or OTP.
 7. For loan applications, account opening, or complex transactions, encourage branch visit or website.
-8. CRITICAL FORMATTING RULES — you MUST follow these:
-   - NEVER use markdown: no **bold**, no *italic*, no headers (#), no bullet dashes (-), no backticks.
+8. CRITICAL FORMATTING RULES:
+   - NEVER use markdown: no bold, no italic, no headers, no bullet dashes, no backticks.
    - Write in plain conversational sentences only.
-   - NEVER repeat the same word or phrase more than twice in a row. If you catch yourself repeating, stop and rephrase.
-   - If you are listing multiple loan types, summarize them briefly — do not list every detail of every product.
+   - NEVER repeat the same word or phrase more than twice in a row.
+   - If listing multiple loan types, summarize briefly, do not list every detail.
 9. End every response with: ${language === 'tagalog' ? '"May iba pa po ba kayong katanungan? 😊"' : '"Mayda pa ba kamo iba nga pangutana? 😊"'}`;
 
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...history,
-      { role: 'user', content: message }
-    ];
+    // Build Gemini conversation format
+    // Gemini uses 'contents' array with 'user' and 'model' roles (not 'assistant')
+    const contents = [];
 
-    const baseOptions = {
+    for (const msg of history) {
+      contents.push({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      });
+    }
+
+    contents.push({
+      role: 'user',
+      parts: [{ text: message }]
+    });
+
+    const response = await fetch(GEMINI_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'http://localhost:3000',
-        'X-Title': 'RBCCI Chatbot'
-      }
-    };
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: contents,
+        generationConfig: {
+          temperature: 0.5,
+          maxOutputTokens: 800,
+        }
+      })
+    });
 
-    const { data } = await fetchWithFallback(
-      'https://openrouter.ai/api/v1/chat/completions',
-      baseOptions,
-      messages
-    );
+    const data = await response.json();
 
-    const aiResponse = sanitizeResponse(data.choices[0].message.content);
+    if (!response.ok) {
+      console.error('Gemini API Error:', data);
+      throw new Error(data?.error?.message || 'Gemini API failed');
+    }
+
+    const rawText = data.candidates[0].content.parts[0].text;
+    const aiResponse = sanitizeResponse(rawText);
+
+    console.log('✅ Gemini responded successfully');
     res.json({ success: true, message: aiResponse });
 
   } catch (error) {
     console.error('❌ Error:', error.message);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
 
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    ai: 'OpenRouter FREE (with fallback)',
-    bank: 'Rural Bank of Calbayog City Inc.',
-    models_available: FREE_MODELS.length
+  res.json({
+    status: 'ok',
+    ai: 'Google Gemini 2.0 Flash (FREE)',
+    bank: 'Rural Bank of Calbayog City Inc.'
   });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\n✅ Server running on http://localhost:${PORT}`);
-  console.log(`🤖 Using: OpenRouter AI (100% FREE) with auto-routing + ${FREE_MODELS.length - 1} fallbacks`);
+  console.log(`🤖 Using: Google Gemini 2.0 Flash (100% FREE)`);
   console.log(`🏦 Bank: Rural Bank of Calbayog City Inc.`);
   console.log(`📡 Ready for chat!\n`);
 });
